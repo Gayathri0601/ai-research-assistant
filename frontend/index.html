@@ -1,9 +1,32 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
     <title>AI Research Assistant</title>
+
+    <!-- Link CSS -->
+    <link rel="stylesheet" href="style.css">
 </head>
+
 <body>
-    <h1>Frontend coming soon 🚀</h1>
+
+<div class="container">
+    <h1>AI Research Assistant</h1>
+
+    <h3>Upload File</h3>
+    <input type="file" id="fileInput">
+    <button onclick="uploadFile()">Upload</button>
+    <p id="uploadStatus"></p>
+
+    <h3>Ask Question</h3>
+    <input type="text" id="queryInput" placeholder="Type your question...">
+    <button onclick="askQuestion()">Ask</button>
+
+    <div id="response"></div>
+</div>
+
+<!-- Link JS -->
+<script src="script.js"></script>
+
 </body>
 </html>

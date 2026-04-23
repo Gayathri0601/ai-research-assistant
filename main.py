@@ -1,10 +1,22 @@
 from fastapi import FastAPI, UploadFile, File
-from db import engine, SessionLocal
-from models import Base, Document
-from embedding import get_embedding, cosine_similarity
+from fastapi.middleware.cors import CORSMiddleware
+
+from backend.db import engine, SessionLocal
+from backend.models import Base, Document
+from backend.embedding import get_embedding, cosine_similarity
+
 import json
 
 app = FastAPI()
+
+# ✅ CORS FIX (VERY IMPORTANT)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://127.0.0.1:5500"],  # frontend URL
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # Create database tables
 Base.metadata.create_all(bind=engine)
@@ -27,11 +39,11 @@ def save_document(filename: str, content: str, embedding):
     return doc
 
 
+# ✅ Upload API
 @app.post("/upload/")
 async def upload_file(file: UploadFile = File(...)):
     content = await file.read()
     text = content.decode("utf-8", errors="ignore")
-
 
     text = text[:500]
 
@@ -47,6 +59,7 @@ async def upload_file(file: UploadFile = File(...)):
     }
 
 
+# ✅ Get all documents
 @app.get("/documents/")
 def get_documents():
     db = SessionLocal()
@@ -62,6 +75,8 @@ def get_documents():
         for d in docs
     ]
 
+
+# ✅ Search API
 @app.get("/search/")
 def search(query: str):
     db = SessionLocal()
@@ -82,13 +97,30 @@ def search(query: str):
             continue
 
         try:
-            doc_embedding = json.loads(doc.embedding)
-            score = cosine_similarity(query_embedding, doc_embedding)
+            # Split content into sentences (simple split)
+            sentences = doc.content.split(".")
+
+            best_sentence = ""
+            best_score = -1
+
+            for sentence in sentences:
+                sentence = sentence.strip()
+                if not sentence:
+                    continue
+
+                sent_emb = get_embedding(sentence)
+                score = cosine_similarity(query_embedding, sent_emb)
+
+                if score > best_score:
+                    best_score = score
+                    best_sentence = sentence
 
             results.append({
                 "filename": doc.filename,
-                "score": round(score, 3)
+                "score": round(best_score, 3),
+                "relevant_text": best_sentence  # ✅ only best part
             })
+
         except Exception as e:
             print("Error:", e)
 
